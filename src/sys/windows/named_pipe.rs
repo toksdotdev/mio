@@ -879,9 +879,8 @@ fn read_done(status: &OVERLAPPED_ENTRY, events: Option<&mut Vec<Event>>) {
         State::Err(err) => {
             error!("read_done; error={err}");
             io.read = State::Err(err);
-            io.notify_readable(&me, events);
-            return
-        },
+            return;
+        }
         State::None | State::Ok(..) => unreachable!(),
     };
     unsafe {
@@ -924,8 +923,7 @@ fn write_done(status: &OVERLAPPED_ENTRY, events: Option<&mut Vec<Event>>) {
         State::Err(err) => {
             error!("write_done; error={err}");
             io.write = State::Err(err);
-            io.notify_writable(&me, events);
-            return
+            return;
         }
         State::None => unreachable!(),
     };
