@@ -876,7 +876,13 @@ fn read_done(status: &OVERLAPPED_ENTRY, events: Option<&mut Vec<Event>>) {
     let mut io = me.io.lock().unwrap();
     let mut buf = match mem::replace(&mut io.read, State::None) {
         State::Pending(buf, _) => buf,
-        _ => unreachable!(),
+        State::Err(err) => {
+            error!("read_done; error={err}");
+            io.read = State::Err(err);
+            io.notify_readable(&me, events);
+            return
+        },
+        State::None | State::Ok(..) => unreachable!(),
     };
     unsafe {
         match me.result(status.overlapped()) {
@@ -915,7 +921,13 @@ fn write_done(status: &OVERLAPPED_ENTRY, events: Option<&mut Vec<Event>>) {
             return;
         }
         State::Pending(buf, pos) => (buf, pos),
-        _ => unreachable!(),
+        State::Err(err) => {
+            error!("write_done; error={err}");
+            io.write = State::Err(err);
+            io.notify_writable(&me, events);
+            return
+        }
+        State::None => unreachable!(),
     };
 
     unsafe {
